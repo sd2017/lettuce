@@ -11,7 +11,7 @@ import com.lambdaworks.redis.protocol.CommandArgs;
  * 
  * @author Vincent Rischmann
  */
-public class SetArgs {
+public class SetArgs extends CompositeArgs {
 
     private Long ex;
     private Long px;

@@ -16,7 +16,7 @@ import com.lambdaworks.redis.protocol.ProtocolKeyword;
  * @author Mark Paluch
  * @since 4.2
  */
-public class BitFieldArgs {
+public class BitFieldArgs extends CompositeArgs {
 
     private List<SubCommand> commands;
 

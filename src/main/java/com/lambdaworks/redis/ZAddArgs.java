@@ -8,7 +8,7 @@ import com.lambdaworks.redis.protocol.CommandArgs;
  * 
  * @author Mark Paluch
  */
-public class ZAddArgs {
+public class ZAddArgs extends CompositeArgs {
 
     private boolean nx = false;
     private boolean xx = false;

@@ -12,7 +12,7 @@ import com.lambdaworks.redis.protocol.CommandArgs;
  * @author Mark Paluch
  * @since 3.0
  */
-public class ScanArgs {
+public class ScanArgs extends CompositeArgs {
 
     private Long count;
     private String match;

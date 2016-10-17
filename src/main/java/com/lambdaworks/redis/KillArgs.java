@@ -13,7 +13,7 @@ import com.lambdaworks.redis.protocol.CommandArgs;
  * @author Mark Paluch
  * @since 3.0
  */
-public class KillArgs {
+public class KillArgs extends CompositeArgs {
 
     private static enum Type {
         NORMAL, SLAVE, PUBSUB
