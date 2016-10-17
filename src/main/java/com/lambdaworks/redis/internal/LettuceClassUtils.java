@@ -38,7 +38,6 @@ public class LettuceClassUtils {
         primitiveWrapperTypeMap.put(Integer.class, int.class);
         primitiveWrapperTypeMap.put(Long.class, long.class);
         primitiveWrapperTypeMap.put(Short.class, short.class);
-
     }
 
     /**
@@ -63,7 +62,6 @@ public class LettuceClassUtils {
      * 
      * @param className
      * @return
-     * @throws ClassNotFoundException
      */
     public static Class<?> findClass(String className) {
         try {
