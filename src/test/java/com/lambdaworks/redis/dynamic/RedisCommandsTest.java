@@ -1,6 +1,7 @@
 package com.lambdaworks.redis.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -54,6 +55,27 @@ public class RedisCommandsTest extends AbstractRedisClientTest {
         assertThat(key.block()).isEqualTo("OK");
     }
 
+    @Test
+    public void verifierShouldCatchBuggyDeclarations() throws Exception {
+
+        RedisCommandFactory factory = new RedisCommandFactory(redis.getStatefulConnection());
+
+        try {
+            factory.getCommands(TooFewParameters.class);
+            fail("Missing CommandCreationException");
+        } catch (CommandCreationException e) {
+            assertThat(e).hasMessageContaining("Command GET accepts 1 parameters but method declares 0 parameter");
+        }
+
+        try {
+            factory.getCommands(WithTypo.class);
+            fail("Missing CommandCreationException");
+        } catch (CommandCreationException e) {
+            assertThat(e).hasMessageContaining("Command GAT does not exist.");
+        }
+
+    }
+
     static interface TestInterface {
 
         String get(String key);
@@ -68,5 +90,17 @@ public class RedisCommandsTest extends AbstractRedisClientTest {
 
         @Command("SET")
         Mono<String> setReactive(String key, String value);
+    }
+
+    static interface TooFewParameters {
+
+        String get();
+
+    }
+
+    static interface WithTypo {
+
+        String gat(String key);
+
     }
 }

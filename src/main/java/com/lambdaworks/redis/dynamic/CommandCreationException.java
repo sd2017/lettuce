@@ -10,7 +10,7 @@ public class CommandCreationException extends RedisException {
     private final CommandMethod commandMethod;
 
     public CommandCreationException(CommandMethod commandMethod, String msg) {
-        super(msg);
+        super(String.format("%s Offending method: %s", msg, commandMethod));
         this.commandMethod = commandMethod;
     }
 

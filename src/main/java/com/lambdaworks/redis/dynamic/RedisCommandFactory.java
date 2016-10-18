@@ -2,6 +2,7 @@ package com.lambdaworks.redis.dynamic;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,7 @@ import com.lambdaworks.redis.api.StatefulConnection;
 import com.lambdaworks.redis.api.StatefulRedisConnection;
 import com.lambdaworks.redis.api.async.BaseRedisAsyncCommands;
 import com.lambdaworks.redis.api.reactive.BaseRedisReactiveCommands;
+import com.lambdaworks.redis.cluster.api.StatefulRedisClusterConnection;
 import com.lambdaworks.redis.codec.ByteArrayCodec;
 import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.codec.StringCodec;
@@ -28,8 +30,11 @@ import com.lambdaworks.redis.dynamic.output.OutputRegistry;
 import com.lambdaworks.redis.dynamic.output.OutputRegistryCommandOutputFactoryResolver;
 import com.lambdaworks.redis.dynamic.parameter.ExecutionSpecificParameters;
 import com.lambdaworks.redis.dynamic.segment.AnnotationCommandSegmentFactory;
+import com.lambdaworks.redis.dynamic.segment.CommandSegments;
 import com.lambdaworks.redis.internal.LettuceAssert;
 import com.lambdaworks.redis.internal.LettuceLists;
+import com.lambdaworks.redis.models.command.CommandDetail;
+import com.lambdaworks.redis.models.command.CommandDetailParser;
 import com.lambdaworks.redis.output.CommandOutput;
 import com.lambdaworks.redis.protocol.CommandArgs;
 import com.lambdaworks.redis.protocol.LettuceCharsets;
@@ -78,10 +83,13 @@ public interface MyRedisCommands {
 public class RedisCommandFactory {
 
     private final StatefulConnection<?, ?> connection;
+    private final CommandMethodVerifier commandMethodVerifier;
     private final List<RedisCodec<?, ?>> redisCodecs = new ArrayList<>();
 
     private CommandOutputFactoryResolver commandOutputFactoryResolver = new OutputRegistryCommandOutputFactoryResolver(
             new OutputRegistry());
+
+    private boolean verifyCommandMethods = true;
 
     /**
      * Create a new {@link CommandFactory} given {@link StatefulConnection}.
@@ -105,6 +113,26 @@ public class RedisCommandFactory {
 
         this.connection = connection;
         this.redisCodecs.addAll(redisCodecs);
+
+        commandMethodVerifier = new CommandMethodVerifier(getCommands(connection));
+    }
+
+    private List<CommandDetail> getCommands(StatefulConnection<?, ?> connection) {
+
+        List<Object> commands = Collections.emptyList();
+        if (connection instanceof StatefulRedisConnection) {
+            commands = ((StatefulRedisConnection) connection).sync().command();
+        }
+
+        if (connection instanceof StatefulRedisClusterConnection) {
+            commands = ((StatefulRedisClusterConnection) connection).sync().command();
+        }
+
+        if (commands.isEmpty()) {
+            verifyCommandMethods = false;
+        }
+
+        return CommandDetailParser.parse(commands);
     }
 
     /**
@@ -117,6 +145,16 @@ public class RedisCommandFactory {
         LettuceAssert.notNull(commandOutputFactoryResolver, "CommandOutputFactoryResolver must not be null");
 
         this.commandOutputFactoryResolver = commandOutputFactoryResolver;
+    }
+
+    /**
+     * Enables/disables command verification which checks the command name against Redis {@code COMMAND} and the argument count.
+     * 
+     * @param verifyCommandMethods {@literal true} to enable command verification (default) or {@literal false} to disable
+     *        command verification.
+     */
+    public void setVerifyCommandMethods(boolean verifyCommandMethods) {
+        this.verifyCommandMethods = verifyCommandMethods;
     }
 
     /**
@@ -270,8 +308,7 @@ public class RedisCommandFactory {
 
                 if (commandFactory.isStreamingExecution()) {
 
-                    return redisReactiveCommands
-                            .createDissolvingFlux(() -> commandFactory.createCommand(arguments));
+                    return redisReactiveCommands.createDissolvingFlux(() -> commandFactory.createCommand(arguments));
                 }
 
                 return redisReactiveCommands.createFlux(() -> commandFactory.createCommand(arguments));
@@ -303,19 +340,25 @@ public class RedisCommandFactory {
             RedisCodec<?, ?> codec = codecResolver.resolve(commandMethod);
 
             if (codec == null) {
-                throw new IllegalStateException(String.format("Cannot resolve codec for command method %s", method));
+                throw new CommandCreationException(commandMethod, "Cannot resolve codec.");
             }
 
             CodecAwareOutputFactoryResolver outputFactoryResolver = new CodecAwareOutputFactoryResolver(
                     commandOutputFactoryResolver, codec);
-            if (commandMethod.isReactiveExecution()) {
+            CommandSegments commandSegments = commandSegmentFactory.createCommandSegments(commandMethod);
 
-                return new ReactiveCommandSegmentCommandFactory(commandSegmentFactory.createCommandSegments(commandMethod),
-                        commandMethod, (RedisCodec) codec, outputFactoryResolver);
+            if (verifyCommandMethods) {
+                commandMethodVerifier.validate(commandSegments, commandMethod);
             }
 
-            return new CommandSegmentCommandFactory<>(commandSegmentFactory.createCommandSegments(commandMethod), commandMethod,
-                    (RedisCodec) codec, outputFactoryResolver);
+            if (commandMethod.isReactiveExecution()) {
+
+                return new ReactiveCommandSegmentCommandFactory(commandSegments, commandMethod, (RedisCodec) codec,
+                        outputFactoryResolver);
+            }
+
+            return new CommandSegmentCommandFactory<>(commandSegments, commandMethod, (RedisCodec) codec,
+                    outputFactoryResolver);
         }
     }
 
@@ -337,14 +380,20 @@ public class RedisCommandFactory {
             RedisCodec<?, ?> codec = codecResolver.resolve(commandMethod);
 
             if (codec == null) {
-                throw new IllegalStateException(String.format("Cannot resolve codec for command method %s", method));
+                throw new CommandCreationException(commandMethod, "Cannot resolve codec.");
+            }
+
+            CommandSegments commandSegments = commandSegmentFactory.createCommandSegments(commandMethod);
+
+            if (verifyCommandMethods) {
+                commandMethodVerifier.validate(commandSegments, commandMethod);
             }
 
             CodecAwareOutputFactoryResolver outputFactoryResolver = new CodecAwareOutputFactoryResolver(
                     commandOutputFactoryResolver, codec);
 
-            return new ReactiveCommandSegmentCommandFactory(commandSegmentFactory.createCommandSegments(commandMethod),
-                    commandMethod, (RedisCodec) codec, outputFactoryResolver);
+            return new ReactiveCommandSegmentCommandFactory(commandSegments, commandMethod, (RedisCodec) codec,
+                    outputFactoryResolver);
         }
     }
 

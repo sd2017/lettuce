@@ -165,4 +165,9 @@ public class CommandMethod {
         result = 31 * result + (arguments != null ? arguments.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return method.toGenericString();
+    }
 }

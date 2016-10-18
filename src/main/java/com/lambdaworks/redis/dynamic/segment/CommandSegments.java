@@ -41,6 +41,10 @@ public class CommandSegments implements Iterable<CommandSegment> {
         return commandType;
     }
 
+    public int size() {
+        return segments.size();
+    }
+
     private static class StringCommandType implements ProtocolKeyword {
 
         private final byte[] commandTypeBytes;
