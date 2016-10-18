@@ -265,16 +265,16 @@ public class RedisCommandFactory {
                 ReactiveCommandSegmentCommandFactory commandFactory = commandFactories.get(method);
 
                 if (ReactiveWrappers.isSingle(method.getReturnType())) {
-                    return redisReactiveCommands.createMono(() -> (RedisCommand) commandFactory.createCommand(arguments));
+                    return redisReactiveCommands.createMono(() -> commandFactory.createCommand(arguments));
                 }
 
                 if (commandFactory.isStreamingExecution()) {
 
                     return redisReactiveCommands
-                            .createDissolvingFlux(() -> (RedisCommand) commandFactory.createCommand(arguments));
+                            .createDissolvingFlux(() -> commandFactory.createCommand(arguments));
                 }
 
-                return redisReactiveCommands.createFlux(() -> (RedisCommand) commandFactory.createCommand(arguments));
+                return redisReactiveCommands.createFlux(() -> commandFactory.createCommand(arguments));
             }
 
             return invocation.proceed();

@@ -4,6 +4,7 @@ import com.lambdaworks.redis.codec.RedisCodec;
 import com.lambdaworks.redis.dynamic.output.CommandOutputFactory;
 import com.lambdaworks.redis.dynamic.output.CommandOutputFactoryResolver;
 import com.lambdaworks.redis.dynamic.output.OutputSelector;
+import com.lambdaworks.redis.dynamic.parameter.ExecutionSpecificParameters;
 import com.lambdaworks.redis.dynamic.parameter.MethodParametersAccessor;
 import com.lambdaworks.redis.dynamic.segment.CommandSegments;
 import com.lambdaworks.redis.output.CommandOutput;
@@ -38,6 +39,16 @@ class CommandSegmentCommandFactory<K, V> implements CommandFactory {
         if (factory == null) {
             throw new IllegalArgumentException(String.format("Cannot resolve CommandOutput for result type %s on method %s",
                     commandMethod.getActualReturnType(), commandMethod.getMethod()));
+        }
+
+        if (commandMethod.getParameters() instanceof ExecutionSpecificParameters) {
+
+            ExecutionSpecificParameters executionAwareParameters = (ExecutionSpecificParameters) commandMethod.getParameters();
+
+            if (commandMethod.isFutureExecution() && executionAwareParameters.hasTimeoutIndex()) {
+                throw new CommandCreationException(commandMethod,
+                        "Asynchronous command methods do not support Timeout parameters");
+            }
         }
 
         this.outputFactory = factory;

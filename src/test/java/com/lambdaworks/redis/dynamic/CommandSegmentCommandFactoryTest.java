@@ -1,8 +1,10 @@
 package com.lambdaworks.redis.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -14,6 +16,7 @@ import com.lambdaworks.redis.codec.StringCodec;
 import com.lambdaworks.redis.dynamic.annotation.Command;
 import com.lambdaworks.redis.dynamic.annotation.Param;
 import com.lambdaworks.redis.dynamic.annotation.Value;
+import com.lambdaworks.redis.dynamic.domain.Timeout;
 import com.lambdaworks.redis.dynamic.output.CodecAwareOutputFactoryResolver;
 import com.lambdaworks.redis.dynamic.output.OutputRegistry;
 import com.lambdaworks.redis.dynamic.output.OutputRegistryCommandOutputFactoryResolver;
@@ -83,6 +86,25 @@ public class CommandSegmentCommandFactoryTest {
         assertThat(toString(command)).isEqualTo("CLIENT SETNAME key<name>");
     }
 
+    @Test
+    public void asyncWithTimeout() {
+
+        try {
+            createCommand(createCommandMethod(MethodsWithTimeout.class, "async", String.class, Timeout.class),
+                    new StringCodec());
+            fail("Missing CommandCreationException");
+        } catch (CommandCreationException e) {
+            assertThat(e).hasMessageContaining("Asynchronous command methods do not support Timeout parameters");
+        }
+    }
+
+    @Test
+    public void syncWithTimeout() {
+
+        createCommand(createCommandMethod(MethodsWithTimeout.class, "sync", String.class, Timeout.class), new StringCodec(),
+                "hello", null);
+    }
+
     private CommandMethod createCommandMethod(Class<?> commandInterface, String methodName, Class... args) {
         return new CommandMethod(ReflectionUtils.findMethod(commandInterface, methodName, args));
     }
@@ -130,5 +152,12 @@ public class CommandSegmentCommandFactoryTest {
 
         @Command("CLIENT SETNAME :connectionName")
         boolean woohoo(@Param("connectionName") String connectionName);
+    }
+
+    static interface MethodsWithTimeout {
+
+        Future<String> async(String key, Timeout timeout);
+
+        String sync(String key, Timeout timeout);
     }
 }

@@ -12,12 +12,12 @@ import com.lambdaworks.redis.dynamic.segment.CommandSegments;
  * 
  * @author Mark Paluch
  */
-class ReactiveCommandSegmentCommandFactory extends CommandSegmentCommandFactory {
+class ReactiveCommandSegmentCommandFactory<K, V> extends CommandSegmentCommandFactory<K, V> {
 
     private boolean streamingExecution;
 
     public ReactiveCommandSegmentCommandFactory(CommandSegments commandSegments, CommandMethod commandMethod,
-            RedisCodec<Object, Object> redisCodec, CommandOutputFactoryResolver outputResolver) {
+            RedisCodec<K, V> redisCodec, CommandOutputFactoryResolver outputResolver) {
 
         super(commandSegments, commandMethod, redisCodec, outputResolver);
 
@@ -26,7 +26,7 @@ class ReactiveCommandSegmentCommandFactory extends CommandSegmentCommandFactory 
             ExecutionSpecificParameters executionAwareParameters = (ExecutionSpecificParameters) commandMethod.getParameters();
 
             if (executionAwareParameters.hasTimeoutIndex()) {
-                throw new IllegalStateException("Reactive Command Methods do not support Timeout parameters");
+                throw new CommandCreationException(commandMethod, "Reactive command methods do not support Timeout parameters");
             }
         }
     }
