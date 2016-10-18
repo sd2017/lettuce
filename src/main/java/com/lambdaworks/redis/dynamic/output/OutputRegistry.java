@@ -48,6 +48,7 @@ public class OutputRegistry {
         register(registry, ValueValueListOutput.class, ValueValueListOutput::new);
 
         register(registry, StringListOutput.class, StringListOutput::new);
+        register(registry, VoidOutput.class, VoidOutput::new);
 
         BUILTIN.putAll(registry);
     }

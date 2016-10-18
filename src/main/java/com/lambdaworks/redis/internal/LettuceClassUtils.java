@@ -22,12 +22,12 @@ public class LettuceClassUtils {
      * Map with primitive wrapper type as key and corresponding primitive type as value, for example: Integer.class ->
      * int.class.
      */
-    private static final Map<Class<?>, Class<?>> primitiveWrapperTypeMap = new IdentityHashMap<Class<?>, Class<?>>(8);
+    private static final Map<Class<?>, Class<?>> primitiveWrapperTypeMap = new IdentityHashMap<Class<?>, Class<?>>(9);
 
     /**
      * Map with primitive type as key and corresponding wrapper type as value, for example: int.class -> Integer.class.
      */
-    private static final Map<Class<?>, Class<?>> primitiveTypeToWrapperMap = new IdentityHashMap<Class<?>, Class<?>>(8);
+    private static final Map<Class<?>, Class<?>> primitiveTypeToWrapperMap = new IdentityHashMap<Class<?>, Class<?>>(9);
 
     static {
         primitiveWrapperTypeMap.put(Boolean.class, boolean.class);
@@ -38,6 +38,7 @@ public class LettuceClassUtils {
         primitiveWrapperTypeMap.put(Integer.class, int.class);
         primitiveWrapperTypeMap.put(Long.class, long.class);
         primitiveWrapperTypeMap.put(Short.class, short.class);
+        primitiveWrapperTypeMap.put(Void.class, void.class);
     }
 
     /**

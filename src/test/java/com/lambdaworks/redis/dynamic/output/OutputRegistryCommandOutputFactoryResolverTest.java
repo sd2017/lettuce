@@ -30,6 +30,13 @@ public class OutputRegistryCommandOutputFactoryResolverTest {
     }
 
     @Test
+    public void shouldResolveVoidOutput() {
+
+        assertThat(getCommandOutput("voidMethod")).isInstanceOf(VoidOutput.class);
+        assertThat(getCommandOutput("voidWrapper")).isInstanceOf(VoidOutput.class);
+    }
+
+    @Test
     public void shouldResolveStringValueListOutput() {
 
         CommandOutput<?, ?, ?> commandOutput = getCommandOutput("stringValueList");
@@ -110,6 +117,10 @@ public class OutputRegistryCommandOutputFactoryResolverTest {
         boolean bool();
 
         Boolean boolWrapper();
+
+        void voidMethod();
+
+        Void voidWrapper();
 
         List<Boolean> boolList();
 
