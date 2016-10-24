@@ -1,0 +1,9 @@
+builder:
+  build : .
+  command: /bin/bash
+  links:
+    - maven
+maven:
+  image: maven:3.3.9-jdk-7
+
+
